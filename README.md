@@ -1,4 +1,4 @@
-# Preference-Aware Urban Representation and  Planning for Adaptive Metro Expansion (`ours`)
+# PURP: Preference-Aware Urban Representation and  Planning for Adaptive Metro Expansion
 
 A codebase for multi-objective metro network expansion planning using graph neural networks and reinforcement learning.
 
