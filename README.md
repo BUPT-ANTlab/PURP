@@ -1,58 +1,58 @@
 # Multi-Objective Metro Network Expansion (`ours`)
 
-基于图神经网络与强化学习的多目标地铁网络扩建规划代码库。
+A codebase for multi-objective metro network expansion planning using graph neural networks and reinforcement learning.
 
-## 1. 目录结构
+## 1. Directory Structure
 
-- `data/`：城市路网、既有线路、OD 矩阵与多目标静态数据文件
-- `metro/`：底层地铁扩建物理环境、配置与基础网络模块
-- `khrylib/`：强化学习基础工具库
-- `ours/`：多目标势能编码、策略网络与 PPO 训练核心实现
-- `train.py`：模型训练与测试评估主入口
-- `requirements.txt`：Python 环境依赖清单
+- `data/`: Urban networks, existing lines, OD matrices, and static data files for multiple objectives
+- `metro/`: Underlying physical environment for metro expansion, configurations, and basic network modules
+- `khrylib/`: Core reinforcement learning utilities
+- `ours/`: Core implementations of multi-objective potential encoding, policy networks, and PPO training
+- `train.py`: Main entry point for model training and test evaluation
+- `requirements.txt`: Python dependencies
 
-## 2. 环境依赖
+## 2. Dependencies
 
-建议使用 Python 3.10+ 与 PyTorch（支持 CUDA），安装依赖：
+Python 3.10+ and PyTorch with CUDA support are recommended. Install the dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 3. 训练
+## 3. Training
 
-在项目根目录运行，显式提供三个非负偏好系数：
-
-```bash
-python -B train.py --weights <w_G> <w_J> <w_F> --output <训练输出目录>
-```
-
-程序将系数归一化为和为一的偏好向量，依次从零初始化、训练、验证选模和测试。所有运行产物写入指定的空目录，该目录必须位于源码目录之外。
-
-三个指标均越大越好：
-
-- G：相对于初始网络的分段 OD 效益增益。
-- J：相对于初始网络的职住通勤效益增益。
-- F：按社区权重计算的指数衰减接站可达性提升百分点。
-
-训练标量奖励为三个锚点归一化边际增益与当前训练偏好的内积。综合效用为终端 G/J/F 除以各自参考尺度后按目标偏好相加。建设成本是硬预算约束，独立报告，不作为负奖励项。
-
-按传入偏好的最大分量自动选择训练机制：职住主导时采用需求融合图、势能先验和幂次偏好课程；公平主导时采用原始需求图及末段稀疏分支；客流主导或最大分量并列时采用分通道势能及末段稀疏分支。课程仅影响训练，验证和测试始终使用命令行目标偏好。每条状态独立保存偏好与解码模式。
-
-可通过 `--iterations`、`--rollout-steps`、`--mini-batch-size`、`--num-optim-epoch`、`--seed`、`--device` 调整运行参数。初始目录不附带任何训练结果。
-
-## 4. 测试评估
+Run the following command from the project root, explicitly providing three nonnegative preference coefficients:
 
 ```bash
-python -B train.py --mode evaluate --weights <w_G> <w_J> <w_F> --checkpoint <模型文件> --output <评估输出目录>
+python -B train.py --weights <w_G> <w_J> <w_F> --output <training_output_directory>
 ```
 
-评估时须使用与模型一致的数据、环境参数、配置和目标偏好。验证使用独立的固定采样批次，最终测试使用另外三批随机数；每批包含确定性解码和随机解码。最终方案通过独立路网最短路与资产成本核验后导出。
+The program normalizes the coefficients into a preference vector that sums to one, then initializes the model from scratch, trains it, selects a model through validation, and performs testing. All run artifacts are written to the specified empty directory, which must be outside the source directory.
 
-## 5. 正确性检查
+Higher values are better for all three metrics:
+
+- G: Gain in segment-based OD benefits relative to the initial network.
+- J: Gain in home-to-work commuting benefits relative to the initial network.
+- F: Percentage-point improvement in station access accessibility, calculated using community weights and exponential distance decay.
+
+The scalar training reward is the inner product of the three anchor-normalized marginal gains and the current training preference vector. Overall utility is calculated by dividing the terminal G/J/F values by their respective reference scales and summing them with the target preference weights. Construction cost is a hard budget constraint and is reported separately; it is not included as a negative reward term.
+
+The training mechanism is selected automatically based on the largest component of the supplied preference vector: when the home-to-work commuting objective dominates, training uses a demand-fused graph, a potential prior, and a power-law preference curriculum; when fairness dominates, it uses the original demand graph and a sparse branching mechanism in the final stage; when ridership dominates or the largest components are tied, it uses channel-specific potentials and a sparse branching mechanism in the final stage. The curriculum affects training only; validation and testing always use the target preferences specified on the command line. Preferences and decoding modes are stored independently for each state.
+
+Run parameters can be adjusted using `--iterations`, `--rollout-steps`, `--mini-batch-size`, `--num-optim-epoch`, `--seed`, and `--device`. No training results are included in the initial project directory.
+
+## 4. Test Evaluation
+
+```bash
+python -B train.py --mode evaluate --weights <w_G> <w_J> <w_F> --checkpoint <model_file> --output <evaluation_output_directory>
+```
+
+Evaluation must use the same data, environment parameters, configuration, and target preferences as the model. Validation uses a separate, fixed sampling batch, while final testing uses three additional batches of random numbers; each batch includes both deterministic and stochastic decoding. The final plan is exported after independent verification of network shortest paths and asset costs.
+
+## 5. Correctness Checks
 
 ```bash
 python -B train.py --check --weights <w_G> <w_J> <w_F>
 ```
 
-此命令不训练、不创建输出文件，检查初始零增益、合法停止、累计奖励、独立评价、服务圈边际增益、PPO 概率一致性与退化候选集有限梯度。静态目标资产与当前候选网络严格对齐；程序不会将其套用到不同节点集合。
+This command does not train the model or create output files. It checks zero gains in the initial state, valid stopping behavior, cumulative rewards, independent evaluation, marginal gains in service coverage areas, PPO probability consistency, and finite gradients for degenerate candidate sets. Static objective assets are strictly aligned with the current candidate network; the program will not apply them to a different set of nodes.
