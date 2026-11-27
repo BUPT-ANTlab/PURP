@@ -1,4 +1,4 @@
-# Multi-Objective Metro Network Expansion (`ours`)
+# Preference-Aware Urban Representation and  Planning for Adaptive Metro Expansion (`ours`)
 
 A codebase for multi-objective metro network expansion planning using graph neural networks and reinforcement learning.
 
